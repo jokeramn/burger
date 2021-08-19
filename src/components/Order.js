@@ -1,28 +1,67 @@
 import React, { Component } from 'react'
+import PropTypes from 'prop-types'
 import Shipment from './Shipment'
+import { TransitionGroup, CSSTransition } from 'react-transition-group'
 
 class Order extends Component {
+
+  static propTypes = {
+    burgers: PropTypes.object,
+    order : PropTypes.object,
+    deleteFromOrder: PropTypes.func
+  }
+
 
   renderOrder = (key) => {
     const burger = this.props.burgers[key]
     const count = this.props.order[key]
 
     const isAvailable = burger && burger.status === 'available'
-
-    if (!isAvailable) {
-      return <li className='unavailable' key={key}>
-        Извините, {burger ? burger.name : 'бургер'} временно недоступен
-      </li>
+    const transitionOptions = {
+      classNames: 'order',
+      key,
+      timeout: {
+        enter: 500, exit: 500
+      }
     }
 
-    return <li key={key}>
-      <span>
-        <span>{count}</span>
-        шт. {burger.name}
-        <span> {count * burger.price} ₽</span>
-        <button className='cancelItem'>&times;</button>
-      </span>
-    </li>
+    if (!burger) {
+      return null
+    }
+
+    if (!isAvailable) {
+      return (
+        <CSSTransition {...transitionOptions}>
+          <li className='unavailable' key={key}>
+            Извините, {burger ? burger.name : 'бургер'} временно недоступен
+          </li>
+        </CSSTransition>
+      )
+    }
+
+    return (
+      <CSSTransition  {...transitionOptions}>
+        <li key={key}>
+          <span>
+            <TransitionGroup component='span' className='count'>
+              <CSSTransition
+                classNames='count'
+                key={count}
+                timeout={{ enter: 500, exit: 500 }}>
+                <span>{count}</span>
+              </CSSTransition>
+            </TransitionGroup>
+            шт. {burger.name}
+            <span> {count * burger.price} ₽</span>
+            <button
+              className='cancelItem'
+              onClick={() => this.props.deleteFromOrder(key)}
+            >&times;</button>
+
+          </span>
+        </li>
+      </CSSTransition>
+    )
   }
 
   render() {
@@ -44,9 +83,9 @@ class Order extends Component {
     return (
       <div className="order-wrap">
         <h2>Ваш заказ</h2>
-        <ul className='order'>
+        <TransitionGroup component='ul' className='order'>
           {orderIds.map(this.renderOrder)}
-        </ul>
+        </TransitionGroup>
 
         {total > 0 ? <Shipment total={total} /> : (
           <div className='nothingSelected'>
